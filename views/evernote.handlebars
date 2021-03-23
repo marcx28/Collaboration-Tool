@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>Evernote Tool</title>
+    <script type="text/javascript" src="//cdn.jsdelivr.net/npm/bluebird@3.7.2/js/browser/bluebird.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/js/all.min.js"
+        integrity="sha512-UwcC/iaz5ziHX7V6LjSKaXgCuRRqbTp1QHpbOJ4l1nw2/boCfZ2KlFIqBUA/uRVF0onbREnY9do8rM/uT/ilqw=="
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/AlertifyJS/1.13.1/css/alertify.css"
+        integrity="sha512-MpdEaY2YQ3EokN6lCD6bnWMl5Gwk7RjBbpKLovlrH6X+DRokrPRAF3zQJl1hZUiLXfo2e9MrOt+udOnHCAmi5w=="
+        crossorigin="anonymous" />
+    <link rel="stylesheet" href="./ctx_menu.css" />
+    <script type="text/javascript" src="./ctx_menu.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/AlertifyJS/1.13.1/alertify.js"
+        integrity="sha512-eOUPKZXJTfgptSYQqVilRmxUNYm0XVHwcRHD4mdtCLWf/fC9XWe98IT8H1xzBkLL4Mo9GL0xWMSJtgS5te9rQA=="
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+</head>
+
+<body>
+    <nav style="background-color: #00A82D;" class="navbar navbar-expand-lg navbar-dark">
+        <a class="navbar-brand" href="/evernote">Evernote</a>
+        <a class="navbar-brand" style="color: #7719AB;" href="/">Onenote</a>
+        <div class="btn-group ml-auto">
+            {{#if loggedIn}}
+            {{else}}
+            <input type="button" value="Sign In" id="evernote_login" class="btn btn-secondary"
+                onclick="location.href='{{authorizeUrl}}'">
+            {{/if}}
+        </div>
+    </nav>
+
+    {{#if loggedIn}}
+    <br />
+
+
+    <div class="row">
+        <div class="col-md-3">
+            <div id="jstree_demo_div">
+                <ul>
+                    {{#if activeNotebook}}
+                    <li data-jstree='{"selected":true, "icon": "fas fa-book"}' value="{{activeNotebook.guid}}">
+                        {{activeNotebook.name}}
+                        <ul>
+                            {{#each activeNotebook.notes}}
+                            <li data-jstree='{"selected":true,"icon":"far fa-file"}' value="{{guid}}">
+                                {{title}}
+                            </li>
+                            {{/each}}
+                        </ul>
+                    </li>
+                    {{/if}}
+                    {{#each notebooks}}
+                    <li data-jstree='{"icon":"fas fa-book"}' value="{{guid}}">{{name}}
+                        <ul>
+                            {{#each notes}}
+                            <li data-jstree='{"icon":"far fa-file"}' value="{{guid}}">{{title}}
+                            </li>
+                            {{/each}}
+                        </ul>
+                    </li>
+                    {{/each}}
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="card d-block text-center">
+                <div class="card-body">
+                    <div id="content_wrapper">
+                        <div>
+                            <textarea class="w-75" id="textarea" name="textarea" rows="4"
+                                cols="35">{{#if customCommandText}}{{customCommandText}}{{/if}}</textarea><br />
+                            <input type="checkbox" id="dateCB">
+                            <label for="date">Add Date and Time</label>
+                            <input type="color" id="color" value="#000000">
+                            <label for="color">TextColor</label>
+                            <input style="background-color: #00A82D;" class="btn btn-success" type="button" value="Append Note" name="appendNote"
+                                id="appendNote" onclick="appendNote()" />
+                        </div>
+                        <hr />
+                        <div>
+                            <form action="javascript:executeCommand()" id="commandsForm">
+                                <select class="form-select-lg" name="commands" id="commands">
+                                    {{#each customCommands}}
+                                    <option id="{{@key}}" value="{{this}}">{{@key}}</option>
+                                    {{/each}}
+                                </select>
+                                <input style="background-color: #00A82D;" class="btn btn-success" type="submit" id="execute_command"
+                                    value="Execute Command">
+                                <div class="loader" id="command_loading" style="display:none"></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{/if}}
+        {{#if message}}
+        <script>
+            alertify.notify('{{message}}', 'success', 5);
+        </script>
+        {{/if}}
+        <div id="contextMenu" class="context-menu" style="display: none">
+            <ul>
+                <li><a href="#" onclick="createNotebook()">Create Notebook</a></li>
+                <li><a href="#" onclick="createNote()">Create Note</a></li>
+            </ul>
+        </div>
+        <div id="customCommandVariablesDlg" style="display:none;">
+        </div>
+
+</body>
+<script>
+    $(function () { $('#jstree_demo_div').jstree(); });
+    $('#jstree_demo_div').on('loaded.jstree', function () {
+        $('#jstree_demo_div').jstree(true).open_all();
+    });
+
+    function show() {
+        document.getElementById('content_wrapper').style.display = "block";
+    }
+
+    function hide() {
+        if ($('#jstree_demo_div').jstree(true).get_selected(true)[0] === undefined) {
+            document.getElementById('content_wrapper').style.display = "none";
+        } else if ($('#jstree_demo_div').jstree(true).get_selected(true)[0].parents[0] === '#') {
+            document.getElementById('content_wrapper').style.display = "none";
+        }
+    }
+
+    function createNotebook() {
+        alertify.prompt("Notebookname", "name123",
+            function (evt, value) {
+                location.href = '/evernote/create/notebook?title=' + value;
+            }).set('title', 'Create Notebook');
+    }
+
+    function appendNote() {
+        if ($('#jstree_demo_div').jstree(true).get_selected(true)[0] === undefined) {
+            alertify.error("Select a Note");
+        } else {
+            var level = $('#jstree_demo_div').jstree(true).get_selected(true)[0].parents[0];
+            if (level === '#') {
+                alertify.error("Select a Note");
+            } else {
+                var dateTime;
+                console.log(document.getElementById('dateCB').checked);
+                if (document.getElementById('dateCB').checked == true) {
+                    var currentDate = new Date();
+                    dateTime = currentDate.getDate() + '.' + currentDate.getMonth() + '.' + currentDate.getFullYear() + ' ' + currentDate.getHours() + ':' + currentDate.getMinutes() + ':' + currentDate.getSeconds() + ":\n";
+                }
+                var text = "<div style='color:" + document.getElementById('color').value + "'>" + dateTime + document.getElementById('textarea').value + "</div>";
+                var form = document.createElement('form');
+                document.body.appendChild(form);
+                form.method = 'post';
+                form.action = '/evernote/update/note';
+                var clipText = document.createElement('input');
+                clipText.type = 'hidden';
+                clipText.name = 'content';
+                clipText.value = text;
+                form.appendChild(clipText);
+                var guid = document.createElement('input');
+                guid.type = 'hidden';
+                guid.name = 'guid';
+                guid.value = $('#jstree_demo_div').jstree(true).get_bottom_selected(true)[0].li_attr.value;
+                form.appendChild(guid);
+                form.submit();
+            }
+        }
+    }
+
+    function executeCommand() {
+        var commands = document.getElementById("commands");
+        var selectedCommand = commands.options[commands.selectedIndex].value;
+
+        var variables = selectedCommand.match(/\[(.*?)\]/g);
+        var inputVariables = [];
+
+        if (variables) {
+            var customCommandVariablesDlg = document.getElementById("customCommandVariablesDlg");
+            customCommandVariablesDlg.innerHTML = "";
+
+            for (var i = 0; i < variables.length; i++) {
+                customCommandVariablesDlg.innerHTML += "<p style='margin-bottom:5px'>" + variables[i].substring(1, variables[i].length - 1) + "</p>";
+                customCommandVariablesDlg.innerHTML += "<input class='ajs-input' id='custom-command-input-" + i + "' type='text' value=''/><br>";
+            }
+
+            var customCommandVariablesHTML = $('#customCommandVariablesDlg').html();
+
+            $('#customCommandVariablesDlg').html("");
+            alertify.confirm(customCommandVariablesHTML).set('onok', function (closeevent, value) {
+                for (var i = 0; i < variables.length; i++) {
+                    var obj = {};
+                    obj[variables[i]] = $('#custom-command-input-' + i).val();
+                    inputVariables.push(obj);
+                }
+
+                for (var i = 0; i < inputVariables.length; i++) {
+                    for (let key in inputVariables[i]) {
+                        selectedCommand = selectedCommand.replaceAll(key, inputVariables[i][key]);
+                    }
+                }
+
+                window.location.href = "/evernote/custom-command?command=" + selectedCommand;
+            }).set('title', 'Input Values');
+
+        } else {
+            window.location.href = "/evernote/custom-command?command=" + selectedCommand;
+        }
+    }
+
+    function createNote() {
+        if ($('#jstree_demo_div').jstree(true).get_selected(true)[0] === undefined) {
+            alertify.error("Select a Notebook");
+        } else {
+            var level = $('#jstree_demo_div').jstree(true).get_selected(true)[0].parents[0];
+            if (level === '#') {
+                alertify.prompt("Notename", "name123",
+                    function (evt, value) {
+                        var form = document.createElement('form');
+                        document.body.appendChild(form);
+                        form.method = 'post';
+                        form.action = '/evernote/create/note?title=' + value;
+                        var clipText = document.createElement('input');
+                        clipText.type = 'hidden';
+                        clipText.name = 'content';
+                        clipText.value = "<?xml version='1.0' encoding='UTF-8'?><!DOCTYPE en-note SYSTEM 'http://xml.evernote.com/pub/enml2.dtd'><en-note></en-note>";
+                        form.appendChild(clipText);
+                        var guid = document.createElement('input');
+                        guid.type = 'hidden';
+                        guid.name = 'guid';
+                        guid.value = $('#jstree_demo_div').jstree(true).get_bottom_selected(true)[0].li_attr.value;
+                        form.appendChild(guid);
+                        form.submit();
+                    }).set('title', 'Create Note');
+            } else {
+                alertify.error("Select a Notebook");
+            }
+        }
+    }
+</script>
+
+</html>

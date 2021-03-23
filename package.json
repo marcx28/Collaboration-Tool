@@ -1,0 +1,28 @@
+{
+  "name": "onenote-evernote-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Marco Haiden, Konstantin Neubauer & Kilian Stöckler",
+  "license": "ISC",
+  "dependencies": {
+    "@azure/msal-browser": "^2.11.1",
+    "@kevincobain2000/json-to-html-table": "^1.0.1",
+    "@microsoft/microsoft-graph-client": "^2.2.1",
+    "cookie-parser": "^1.4.5",
+    "evernote": "^2.0.5",
+    "express": "^4.17.1",
+    "express-handlebars": "^5.2.0",
+    "filereader": "^0.10.3",
+    "fs": "0.0.1-security",
+    "is-xml": "^0.1.0",
+    "json2html": "0.0.8",
+    "msal": "^1.4.6",
+    "multer": "^1.4.2",
+    "object-observer": "^4.1.3"
+  }
+}

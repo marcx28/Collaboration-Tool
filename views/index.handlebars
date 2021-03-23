@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+  <title>OneNote Tool</title>
+  <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+    crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.11/themes/default/style.min.css"
+    integrity="sha512-P8BwDSUInKMA7I116Z1RFg/Dfk85uFdliEUYO7vQlwtxLVMNvZimfMAQsaf++9EhlAGOVX6yhDQAIY3/70jDUg=="
+    crossorigin="anonymous" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css"
+    integrity="sha512-HK5fgLBL+xu6dm/Ii3z4xhlSUyZgTT9tuc/hSrtw6uzJOvgRr2a9jyxxT1ely+B+xFAmJKVSTbpM/CuL7qxO8w=="
+    crossorigin="anonymous" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/AlertifyJS/1.13.1/css/alertify.css"
+    integrity="sha512-MpdEaY2YQ3EokN6lCD6bnWMl5Gwk7RjBbpKLovlrH6X+DRokrPRAF3zQJl1hZUiLXfo2e9MrOt+udOnHCAmi5w=="
+    crossorigin="anonymous" />
+  <link rel="stylesheet" href="./ctx_menu.css" />
+  <script type="text/javascript" src="//cdn.jsdelivr.net/npm/bluebird@3.7.2/js/browser/bluebird.min.js"></script>
+  <script type="text/javascript" src="https://alcdn.msauth.net/browser/2.0.0-beta.4/js/msal-browser.js"
+    integrity="sha384-7sxY2tN3GMVE5jXH2RL9AdbO6s46vUh9lUid4yNCHJMUzDoj+0N4ve6rLOmR88yN"
+    crossorigin="anonymous"></script>
+  <script type="text/javascript" src="./treebuilder.js"></script>
+</head>
+
+<body>
+  <nav style="background-color: #7719AB;" class="navbar navbar-expand-lg navbar-dark">
+    <a class="navbar-brand" href="/">Onenote</a>
+    <a id="EV" class="navbar-brand" href="/evernote">Evernote</a>
+    <div class="btn-group ml-auto">
+      <button type="button" id="SignIn" class="btn btn-secondary" onclick="signIn()" style="float: right;">
+        Sign In
+      </button>
+    </div>
+  </nav>
+  <br>
+  <div class="row">
+    <div class="col-md-4">
+      <div id="container">
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div id="all" style="display: none;">
+        <div class="card d-block text-center">
+          <div class="card-body">
+
+            <div id="upload" style="display: none;">
+              <textarea class="w-75" id="textarea" name="textarea" rows="4"
+                cols="35">{{#if commandOutput}}{{commandOutput}}{{/if}}</textarea><br />
+              <input type="checkbox" id="date" onclick="handleCBChange(this)">
+              <label for="date">Add Date and Time</label>
+              <input type="color" id="color" value="#000000">
+              <label for="color">TextColor</label><br />
+              <label>Use Tag:</label>
+              <select name="tagdd" id="tagdd" onchange="checkTag(this);">
+                <option id=0>None</option>
+                <option id=1>Idea</option>
+                <option id=2>Critical</option>
+                <option id=3>Comment</option>
+                <option id=4>Red</option>
+              </select></br>
+              <input type="button" value="Insert into Page" id="insertIntoPage" style="background-color: #7719AB;"
+                class="btn btn-dark">
+              <div id="comment" style="display: none;">
+                <label for="comment_text">Text: </label>
+                <input type="text" id="comment_text" name="comment_text" />
+              </div>
+              <div>
+                <img id="pastedImage" width="200" src=""></img>
+              </div>
+              <br />
+              <hr />
+              <form action="javascript:executeCommand()" id="commandsForm">
+                <select name="commands" id="commands">
+                  {{#each customCommands}}
+                  <option id="{{@key}}" value="{{this}}">{{@key}}</option>
+                  {{/each}}
+                </select>
+                <input style="background-color: #7719AB;" class="btn btn-dark" type="submit" id="execute_command"
+                  value="Execute Command">
+                <div class="loader" id="command_loading" style="display:none"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="customCommandVariablesDlg" style="display:none;">
+  </div>
+
+  <div style="display:none;">
+    <table id="jsonTable">
+    </table>
+
+    <div id="sharepointDlg">
+      <p> Host: </p>
+      <input class="ajs-input" id="sharepoint-host" type="text" value="htlkaindorfat.sharepoint.com" />
+
+      <p> Path: </p>
+      <input class="ajs-input" id="sharepoint-path" type="text" value="sites/TestOneNote" />
+    </div>
+  </div>
+
+  <div id="contextMenu" class="context-menu" style="display: none">
+    <ul>
+      <li><a href="#" onclick="create('NB', null)">Create Notebook</a></li>
+      <li><a href="#" onclick="create('Sec', null)">Create Section</a></li>
+      <li><a href="#" onclick="create('Pag', null)">Create Page</a></li>
+      <li><a href="#" onclick="getNotebooks()">Reload</a></li>
+      <li><a href="#" onclick="loadWritePath()">ChangeSharepoint Site</a></li>
+    </ul>
+  </div>
+
+  <!-- importing bootstrap.js and supporting js libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+    integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+    crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+    integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+    crossorigin="anonymous"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/js/all.min.js"
+    integrity="sha512-UwcC/iaz5ziHX7V6LjSKaXgCuRRqbTp1QHpbOJ4l1nw2/boCfZ2KlFIqBUA/uRVF0onbREnY9do8rM/uT/ilqw=="
+    crossorigin="anonymous"></script>
+
+  <script type="text/javascript" src="https://alcdn.msauth.net/lib/1.4.2/js/msal.min.js"></script>
+  <script type="text/javascript"
+    src="https://cdn.jsdelivr.net/npm/@microsoft/microsoft-graph-client/lib/graph-js-sdk.js"></script>
+
+  <!-- polyfilling promise -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/es6-promise/dist/es6-promise.auto.min.js"></script>
+
+  <!-- polyfilling fetch -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/whatwg-fetch/dist/fetch.umd.min.js"></script>
+
+  <!-- depending on your browser you might wanna include babel polyfill -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@babel/polyfill@7.4.4/dist/polyfill.min.js"></script>
+
+  <!-- importing app scripts (load order is important) -->
+  <script type="text/javascript" src="./authConfig.js"></script>
+  <script type="text/javascript" src="./graphConfig.js"></script>
+  <script type="text/javascript" src="./ui.js"></script>
+
+  <!-- <script type="text/javascript" src="./authRedirect.js"></script>   -->
+  <!-- uncomment the above line and comment the line below if you would like to use the redirect flow -->
+  <script type="text/javascript" src="./authPopup.js"></script>
+  <script type="text/javascript" src="./graph.js"></script>
+  <script type="text/javascript" src="./clipboard.js"></script>
+  <script type="text/javascript" src="./jsonParser.js"></script>
+  <script type="text/javascript" src="./ctx_menu.js"></script>
+  <script type="text/javascript" src="./alert_handler.js"></script>
+  <script type="text/javascript" src="./extra_handler.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/AlertifyJS/1.13.1/alertify.js"
+    integrity="sha512-eOUPKZXJTfgptSYQqVilRmxUNYm0XVHwcRHD4mdtCLWf/fC9XWe98IT8H1xzBkLL4Mo9GL0xWMSJtgS5te9rQA=="
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.11/jstree.min.js"
+    integrity="sha512-bU6dl4fd2XN3Do3aWypPP2DcKywDyR3YlyszV+rOw9OpglrGyBs6TyTsbglf9umgE+sy+dKm1UHhi07Lv+Vtfg=="
+    crossorigin="anonymous"></script>
+
+</body>
+
+</html>
